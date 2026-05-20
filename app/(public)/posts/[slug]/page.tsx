@@ -1,3 +1,5 @@
+
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import RichContent from "@/components/public/RichContent";
 import { getPublishedPostBySlug } from "@/lib/queries/posts";

@@ -15,6 +15,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const session = await auth();
   if (!session) redirect("/admin/login");
@@ -99,8 +101,8 @@ export default async function DashboardPage() {
             <div
               key={stat.label}
               className={`bg-white border rounded-xl p-4 ${stat.highlight
-                  ? "border-amber-200 bg-amber-50"
-                  : "border-gray-100"
+                ? "border-amber-200 bg-amber-50"
+                : "border-gray-100"
                 }`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -248,8 +250,8 @@ export default async function DashboardPage() {
               </div>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${post.status === "published"
-                    ? "bg-green-50 text-green-600"
-                    : "bg-yellow-50 text-yellow-600"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-yellow-50 text-yellow-600"
                   }`}
               >
                 {post.status === "published" ? "منشور" : "مسودة"}
