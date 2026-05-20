@@ -1,12 +1,13 @@
-import { db } from "@/lib/db";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
 import {
   users, categories, posts, comments,
   fatawaCategories, fatawa, audioFiles, fatawaAudio,
 } from "@/db/schema";
 import bcrypt from "bcryptjs";
-import * as dotenv from "dotenv";
 
-dotenv.config({ path: ".env.local" });
+const { db } = await import("@/lib/db");
 
 function slug(text: string) {
   return text
@@ -443,7 +444,7 @@ async function seedGroup4() {
       postId: post.id,
       authorName: name,
       content: text,
-      status: "approved",
+      approved: true,
     });
   }
 
@@ -535,7 +536,6 @@ async function seedGroup5() {
       continue;
     }
     await db.insert(fatawa).values({
-      title: f.title,
       slug: slug(f.title),
       question: f.question,
       answer: f.answer,
@@ -608,7 +608,6 @@ async function seedGroup6() {
       continue;
     }
     await db.insert(fatawa).values({
-      title: f.title,
       slug: slug(f.title),
       question: f.question,
       answer: f.answer,
@@ -624,7 +623,10 @@ async function seedGroup6() {
   process.exit(0);
 }
 
-seedGroup6().catch((err) => {
-  console.error("❌ فشل البذر:", err);
-  process.exit(1);
-});
+const group = process.argv[2] || "1";
+if (group === "1") seedGroup1().catch(e => { console.error("❌ فشل البذر:", e); process.exit(1); });
+if (group === "2") seedGroup2().catch(e => { console.error("❌ فشل البذر:", e); process.exit(1); });
+if (group === "3") seedGroup3().catch(e => { console.error("❌ فشل البذر:", e); process.exit(1); });
+if (group === "4") seedGroup4().catch(e => { console.error("❌ فشل البذر:", e); process.exit(1); });
+if (group === "5") seedGroup5().catch(e => { console.error("❌ فشل البذر:", e); process.exit(1); });
+if (group === "6") seedGroup6().catch(e => { console.error("❌ فشل البذر:", e); process.exit(1); });

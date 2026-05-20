@@ -1,3 +1,5 @@
+
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import RichContent from "@/components/public/RichContent";
 import { getFatawaBySlug, getAudioByFatwa } from "@/lib/queries/fatawa";

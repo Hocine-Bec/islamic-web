@@ -1,5 +1,6 @@
 import { getPublishedFatawa, getAllFatawaCategories } from "@/lib/queries/fatawa";
 import FatawaGrid from "@/components/public/FatawaGrid";
+export const dynamic = "force-dynamic";
 
 export default async function FatawaPage({
   searchParams,

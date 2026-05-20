@@ -1,6 +1,7 @@
 import { getPublishedPostsWithContent } from "@/lib/queries/posts";
 import { getAllCategories } from "@/lib/queries/categories";
 import PostsGrid from "@/components/public/PostsGrid";
+export const dynamic = "force-dynamic";
 
 export default async function PostsPage({
   searchParams,

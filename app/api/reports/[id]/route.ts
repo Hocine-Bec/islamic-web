@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -15,11 +15,12 @@ export async function PUT(
     }
 
     const { isRead } = await req.json();
+    const { id } = await params;
 
     await db
       .update(reports)
       .set({ isRead })
-      .where(eq(reports.id, Number(params.id)));
+      .where(eq(reports.id, Number(id)));
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -33,7 +34,7 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -41,7 +42,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await db.delete(reports).where(eq(reports.id, Number(params.id)));
+    const { id } = await params;
+
+    await db.delete(reports).where(eq(reports.id, Number(id)));
 
     return NextResponse.json({ success: true });
   } catch (error) {
