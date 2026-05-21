@@ -12,7 +12,7 @@ export default async function FatawaPage({
 
   const [fatawa, totalCount, categories] = await Promise.all([
     getPublishedFatawaLight(currentPage, category),
-    getPublishedFatawaCount(),
+    getPublishedFatawaCount(category),
     getAllFatawaCategories(),
   ]);
 

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { fatawa, fatawaCategories, fatawaAudio } from "@/db/schema";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
 const PAGE_SIZE = 12;
@@ -60,7 +60,11 @@ export const getPublishedFatawaLight = (page = 1, categorySlug?: string) =>
         })
         .from(fatawa)
         .leftJoin(fatawaCategories, eq(fatawa.categoryId, fatawaCategories.id))
-        .where(eq(fatawa.status, "published"))
+        .where(
+          categorySlug
+            ? sql`${fatawa.status} = 'published' AND ${fatawaCategories.slug} = ${categorySlug}`
+            : eq(fatawa.status, "published")
+        )
         .orderBy(desc(fatawa.createdAt))
         .limit(PAGE_SIZE)
         .offset(offset);
@@ -70,16 +74,21 @@ export const getPublishedFatawaLight = (page = 1, categorySlug?: string) =>
   )();
 
 // ─── Count (Cached) ───────────────────────────────────────────
-export const getPublishedFatawaCount = () =>
+export const getPublishedFatawaCount = (categorySlug?: string) =>
   unstable_cache(
     async () => {
       const result = await db
         .select({ count: count() })
         .from(fatawa)
-        .where(eq(fatawa.status, "published"));
+        .leftJoin(fatawaCategories, eq(fatawa.categoryId, fatawaCategories.id))
+        .where(
+          categorySlug
+            ? sql`${fatawa.status} = 'published' AND ${fatawaCategories.slug} = ${categorySlug}`
+            : eq(fatawa.status, "published")
+        );
       return result[0].count;
     },
-    ["fatawa-published-count"],
+    [`fatawa-published-count-${categorySlug ?? "all"}`],
     { revalidate: 3600, tags: ["fatawa"] }
   )();
 
