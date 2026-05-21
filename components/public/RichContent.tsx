@@ -1,7 +1,13 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
 export default function RichContent({ html }: { html: string }) {
-  const clean = DOMPurify.sanitize(html);
+  const clean = sanitizeHtml(html, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["u", "s"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      "*": ["style", "dir"],
+    },
+  });
 
   return (
     <div

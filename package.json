@@ -24,7 +24,6 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
-    "isomorphic-dompurify": "^3.14.0",
     "lucide-react": "^1.16.0",
     "next": "16.3.0-canary.25",
     "next-auth": "^5.0.0-beta.31",
@@ -33,6 +32,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-markdown": "^10.1.0",
+    "sanitize-html": "^2.17.4",
     "slugify": "^1.6.9",
     "uploadthing": "^7.7.4"
   },
@@ -42,6 +42,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.1",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
