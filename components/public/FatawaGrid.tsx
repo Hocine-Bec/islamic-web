@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { formatArabicDate } from "@/lib/utils";
 import { Search } from "lucide-react";
+import { getCategoryColor } from "@/lib/categoryColors";
 
 const PAGE_SIZE = 12;
 
@@ -126,7 +127,7 @@ export default function FatawaGrid({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {f.categoryName && (
-                          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
+                          <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full ${getCategoryColor(f.categorySlug).bg} ${getCategoryColor(f.categorySlug).text}`}>
                             {f.categoryName}
                           </span>
                         )}

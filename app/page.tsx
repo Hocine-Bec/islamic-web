@@ -5,6 +5,7 @@ import { getLatestPosts } from "@/lib/queries/posts";
 import { getPostsCount } from "@/lib/queries/posts";
 import { getAllCategories } from "@/lib/queries/categories";
 import { getCommentsCount } from "@/lib/queries/comments";
+import { getCategoryColor } from "@/lib/categoryColors";
 import PublicHeader from "@/components/public/PublicHeader";
 import PublicFooter from "@/components/public/PublicFooter";
 
@@ -96,11 +97,10 @@ async function HomeLatestContent() {
                 </div>
                 <div className="flex-1 min-w-0">
                   {featured.categoryName && (
-                    <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getCategoryColor(featured.categorySlug).bg} ${getCategoryColor(featured.categorySlug).text}`}>
                       {featured.categoryName}
                     </span>
-                  )}
-                  <h3 className="font-medium text-gray-800 mt-2 mb-1.5 text-base leading-relaxed">
+                  )}                  <h3 className="font-medium text-gray-800 mt-2 mb-1.5 text-base leading-relaxed">
                     {featured.title}
                   </h3>
                   {featured.excerpt && (
@@ -126,11 +126,10 @@ async function HomeLatestContent() {
                 className="bg-white border border-gray-100 rounded-xl p-4 hover:border-green-200 hover:shadow-sm transition block"
               >
                 {post.categoryName && (
-                  <span className="text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getCategoryColor(post.categorySlug).bg} ${getCategoryColor(post.categorySlug).text}`}>
                     {post.categoryName}
                   </span>
-                )}
-                <h3 className="font-medium text-gray-800 mt-2 mb-1.5 text-sm leading-relaxed">
+                )}                <h3 className="font-medium text-gray-800 mt-2 mb-1.5 text-sm leading-relaxed">
                   {post.title}
                 </h3>
                 {post.excerpt && (
