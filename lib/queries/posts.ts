@@ -1,7 +1,11 @@
 import { db } from "@/lib/db";
 import { posts, categories } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
+const PAGE_SIZE = 12;
+
+// ─── Admin (no cache for write/admin operations) ──────────────
 export async function getAllPosts() {
   return db
     .select({
@@ -14,6 +18,135 @@ export async function getAllPosts() {
     })
     .from(posts)
     .leftJoin(categories, eq(posts.categoryId, categories.id))
+    .orderBy(desc(posts.createdAt));
+}
+
+// ─── Public list (Cached) ─────────────────────────────────────
+export const getPublishedPostsLight = (page = 1, categorySlug?: string) =>
+  unstable_cache(
+    async () => {
+      const offset = (page - 1) * PAGE_SIZE;
+      return db
+        .select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          excerpt: posts.excerpt,
+          createdAt: posts.createdAt,
+          categoryName: categories.name,
+          categorySlug: categories.slug,
+        })
+        .from(posts)
+        .leftJoin(categories, eq(posts.categoryId, categories.id))
+        .where(
+          categorySlug
+            ? sql`${posts.status} = 'published' AND ${categories.slug} = ${categorySlug}`
+            : eq(posts.status, "published")
+        )
+        .orderBy(desc(posts.createdAt))
+        .limit(PAGE_SIZE)
+        .offset(offset);
+    },
+    [`posts-light-p${page}-c${categorySlug ?? "all"}`],
+    { revalidate: 3600, tags: ["posts"] }
+  )();
+
+// ─── Count (Cached) ───────────────────────────────────────────
+export const getPublishedPostsCount = (categorySlug?: string) =>
+  unstable_cache(
+    async () => {
+      const result = await db
+        .select({ count: count() })
+        .from(posts)
+        .leftJoin(categories, eq(posts.categoryId, categories.id))
+        .where(
+          categorySlug
+            ? sql`${posts.status} = 'published' AND ${categories.slug} = ${categorySlug}`
+            : eq(posts.status, "published")
+        );
+      return result[0].count;
+    },
+    [`posts-count-${categorySlug ?? "all"}`],
+    { revalidate: 3600, tags: ["posts"] }
+  )();
+
+// ─── Single post (Cached) ─────────────────────────────────────
+export const getPublishedPostBySlug = (slug: string) =>
+  unstable_cache(
+    async () => {
+      const [post] = await db
+        .select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          content: posts.content,
+          excerpt: posts.excerpt,
+          createdAt: posts.createdAt,
+          categoryName: categories.name,
+          categorySlug: categories.slug,
+        })
+        .from(posts)
+        .leftJoin(categories, eq(posts.categoryId, categories.id))
+        .where(eq(posts.slug, slug))
+        .limit(1);
+      return post;
+    },
+    [`post-${slug}`],
+    { revalidate: 3600, tags: ["posts", `post-${slug}`] }
+  )();
+
+// ─── Homepage (Cached) ────────────────────────────────────────
+export const getLatestPosts = (limit = 6) =>
+  unstable_cache(
+    async () => {
+      return db
+        .select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          excerpt: posts.excerpt,
+          createdAt: posts.createdAt,
+          categoryName: categories.name,
+          categorySlug: categories.slug,
+        })
+        .from(posts)
+        .leftJoin(categories, eq(posts.categoryId, categories.id))
+        .where(eq(posts.status, "published"))
+        .orderBy(desc(posts.createdAt))
+        .limit(limit);
+    },
+    [`latest-posts-${limit}`],
+    { revalidate: 3600, tags: ["posts"] }
+  )();
+
+// ─── Stats count only (Cached) ────────────────────────────────
+export const getPostsCount = () =>
+  unstable_cache(
+    async () => {
+      const result = await db
+        .select({ count: count() })
+        .from(posts)
+        .where(eq(posts.status, "published"));
+      return result[0].count;
+    },
+    ["posts-total-count"],
+    { revalidate: 3600, tags: ["posts"] }
+  )();
+
+export async function getPostsByCategory(categoryId: number) {
+  return db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      slug: posts.slug,
+      excerpt: posts.excerpt,
+      createdAt: posts.createdAt,
+      categoryName: categories.name,
+      categorySlug: categories.slug,
+    })
+    .from(posts)
+    .leftJoin(categories, eq(posts.categoryId, categories.id))
+    .where(eq(posts.categoryId, categoryId))
     .orderBy(desc(posts.createdAt));
 }
 
@@ -45,7 +178,7 @@ export async function updatePost(
     slug?: string;
     content?: string;
     excerpt?: string;
-    categoryId?: number;
+    categoryId?: number | null;
     status?: "draft" | "published";
     updatedAt?: string;
   }
@@ -60,59 +193,6 @@ export async function updatePost(
 
 export async function deletePost(id: number) {
   await db.delete(posts).where(eq(posts.id, id));
-}
-
-export async function getPublishedPosts() {
-  return db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      slug: posts.slug,
-      excerpt: posts.excerpt,
-      createdAt: posts.createdAt,
-      categoryName: categories.name,
-      categorySlug: categories.slug,
-    })
-    .from(posts)
-    .leftJoin(categories, eq(posts.categoryId, categories.id))
-    .where(eq(posts.status, "published"))
-    .orderBy(desc(posts.createdAt));
-}
-
-export async function getPublishedPostBySlug(slug: string) {
-  const [post] = await db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      slug: posts.slug,
-      content: posts.content,
-      excerpt: posts.excerpt,
-      createdAt: posts.createdAt,
-      categoryName: categories.name,
-      categorySlug: categories.slug,
-    })
-    .from(posts)
-    .leftJoin(categories, eq(posts.categoryId, categories.id))
-    .where(eq(posts.slug, slug))
-    .limit(1);
-  return post;
-}
-
-export async function getPostsByCategory(categoryId: number) {
-  return db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      slug: posts.slug,
-      excerpt: posts.excerpt,
-      createdAt: posts.createdAt,
-      categoryName: categories.name,
-      categorySlug: categories.slug,
-    })
-    .from(posts)
-    .leftJoin(categories, eq(posts.categoryId, categories.id))
-    .where(eq(posts.categoryId, categoryId))
-    .orderBy(desc(posts.createdAt));
 }
 
 export async function getPublishedPostsWithContent() {
@@ -131,4 +211,8 @@ export async function getPublishedPostsWithContent() {
     .leftJoin(categories, eq(posts.categoryId, categories.id))
     .where(eq(posts.status, "published"))
     .orderBy(desc(posts.createdAt));
+}
+
+export async function getPublishedPosts() {
+  return getPublishedPostsLight();
 }

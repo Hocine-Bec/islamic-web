@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { comments, posts } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 
 export async function getAllComments() {
   return db
@@ -16,6 +16,11 @@ export async function getAllComments() {
     .from(comments)
     .leftJoin(posts, eq(comments.postId, posts.id))
     .orderBy(desc(comments.createdAt));
+}
+
+export async function getCommentsCount() {
+  const result = await db.select({ count: count() }).from(comments);
+  return result[0].count;
 }
 
 export async function approveComment(id: number) {

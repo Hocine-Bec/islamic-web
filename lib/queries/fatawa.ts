@@ -1,8 +1,10 @@
 import { db } from "@/lib/db";
 import { fatawa, fatawaCategories, fatawaAudio } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
-// ─── Categories ───────────────────────────────────────────────
+const PAGE_SIZE = 12;
+
 export async function getAllFatawaCategories() {
   return db.select().from(fatawaCategories).orderBy(fatawaCategories.createdAt);
 }
@@ -20,7 +22,7 @@ export async function deleteFatawaCategory(id: number) {
   await db.delete(fatawaCategories).where(eq(fatawaCategories.id, id));
 }
 
-// ─── Fatawa ───────────────────────────────────────────────────
+// ─── Full list for admin (No Cache) ──────────────────────────
 export async function getAllFatawa() {
   return db
     .select({
@@ -39,45 +41,89 @@ export async function getAllFatawa() {
     .orderBy(desc(fatawa.createdAt));
 }
 
-export async function getPublishedFatawa() {
-  return db
-    .select({
-      id: fatawa.id,
-      slug: fatawa.slug,
-      question: fatawa.question,
-      questionerName: fatawa.questionerName,
-      isAnonymous: fatawa.isAnonymous,
-      createdAt: fatawa.createdAt,
-      categoryName: fatawaCategories.name,
-      categorySlug: fatawaCategories.slug,
-    })
-    .from(fatawa)
-    .leftJoin(fatawaCategories, eq(fatawa.categoryId, fatawaCategories.id))
-    .where(eq(fatawa.status, "published"))
-    .orderBy(desc(fatawa.createdAt));
-}
+// ─── Light list for public (Cached) ──────────────────────────
+export const getPublishedFatawaLight = (page = 1, categorySlug?: string) =>
+  unstable_cache(
+    async () => {
+      const offset = (page - 1) * PAGE_SIZE;
 
-export async function getFatawaBySlug(slug: string) {
-  const [f] = await db
-    .select({
-      id: fatawa.id,
-      slug: fatawa.slug,
-      question: fatawa.question,
-      answer: fatawa.answer,
-      questionerName: fatawa.questionerName,
-      isAnonymous: fatawa.isAnonymous,
-      status: fatawa.status,
-      createdAt: fatawa.createdAt,
-      updatedAt: fatawa.updatedAt,
-      categoryName: fatawaCategories.name,
-      categorySlug: fatawaCategories.slug,
-    })
-    .from(fatawa)
-    .leftJoin(fatawaCategories, eq(fatawa.categoryId, fatawaCategories.id))
-    .where(eq(fatawa.slug, slug))
-    .limit(1);
-  return f;
-}
+      return db
+        .select({
+          id: fatawa.id,
+          slug: fatawa.slug,
+          question: fatawa.question,
+          questionerName: fatawa.questionerName,
+          isAnonymous: fatawa.isAnonymous,
+          createdAt: fatawa.createdAt,
+          categoryName: fatawaCategories.name,
+          categorySlug: fatawaCategories.slug,
+        })
+        .from(fatawa)
+        .leftJoin(fatawaCategories, eq(fatawa.categoryId, fatawaCategories.id))
+        .where(eq(fatawa.status, "published"))
+        .orderBy(desc(fatawa.createdAt))
+        .limit(PAGE_SIZE)
+        .offset(offset);
+    },
+    [`fatawa-light-p${page}-c${categorySlug ?? "all"}`],
+    { revalidate: 3600, tags: ["fatawa"] }
+  )();
+
+// ─── Count (Cached) ───────────────────────────────────────────
+export const getPublishedFatawaCount = () =>
+  unstable_cache(
+    async () => {
+      const result = await db
+        .select({ count: count() })
+        .from(fatawa)
+        .where(eq(fatawa.status, "published"));
+      return result[0].count;
+    },
+    ["fatawa-published-count"],
+    { revalidate: 3600, tags: ["fatawa"] }
+  )();
+
+// ─── Stats count only (Cached) ────────────────────────────────
+export const getFatawaCount = () =>
+  unstable_cache(
+    async () => {
+      const result = await db
+        .select({ count: count() })
+        .from(fatawa)
+        .where(eq(fatawa.status, "pending"));
+      return result[0].count;
+    },
+    ["fatawa-pending-count"],
+    { revalidate: 3600, tags: ["fatawa"] }
+  )();
+
+// ─── Single fatwa (Cached) ────────────────────────────────────
+export const getFatawaBySlug = (slug: string) =>
+  unstable_cache(
+    async () => {
+      const [f] = await db
+        .select({
+          id: fatawa.id,
+          slug: fatawa.slug,
+          question: fatawa.question,
+          answer: fatawa.answer,
+          questionerName: fatawa.questionerName,
+          isAnonymous: fatawa.isAnonymous,
+          status: fatawa.status,
+          createdAt: fatawa.createdAt,
+          updatedAt: fatawa.updatedAt,
+          categoryName: fatawaCategories.name,
+          categorySlug: fatawaCategories.slug,
+        })
+        .from(fatawa)
+        .leftJoin(fatawaCategories, eq(fatawa.categoryId, fatawaCategories.id))
+        .where(eq(fatawa.slug, slug))
+        .limit(1);
+      return f;
+    },
+    [`fatwa-${slug}`],
+    { revalidate: 3600, tags: ["fatawa", `fatwa-${slug}`] }
+  )();
 
 export async function getFatawaById(id: number) {
   const [f] = await db
@@ -108,7 +154,7 @@ export async function updateFatwa(
     answer?: string;
     questionerName?: string;
     isAnonymous?: boolean;
-    categoryId?: number;
+    categoryId?: number | null;
     status?: "pending" | "published";
     updatedAt?: string;
   }
@@ -125,7 +171,6 @@ export async function deleteFatwa(id: number) {
   await db.delete(fatawa).where(eq(fatawa.id, id));
 }
 
-// ─── Fatawa Audio ─────────────────────────────────────────────
 export async function getAudioByFatwa(fatawaId: number) {
   return db
     .select()
