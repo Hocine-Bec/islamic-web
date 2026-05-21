@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { UploadButton } from "@/lib/uploadthing-components";
 
 type AudioItem = {
@@ -16,15 +16,15 @@ export default function AudioManager({ postId }: { postId: number }) {
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function fetchAudio() {
+  const fetchAudio = useCallback(async () => {
     const res = await fetch(`/api/audio/${postId}`);
     const data = await res.json();
     setAudioList(data);
-  }
+  }, [postId]);
 
   useEffect(() => {
-    fetchAudio();
-  }, [postId]);
+    setTimeout(() => fetchAudio(), 0);
+  }, [fetchAudio]);
 
   async function handleSave() {
     if (!title.trim() || !pendingUrl) return;

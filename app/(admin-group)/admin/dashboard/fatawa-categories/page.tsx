@@ -29,7 +29,13 @@ export default function FatawaCategoriesPage() {
     setCategories(data);
   }
 
-  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => {
+    let mounted = true;
+    if (mounted) {
+      setTimeout(() => fetchCategories(), 0);
+    }
+    return () => { mounted = false; };
+  }, []);
 
   async function handleCreate() {
     if (!name.trim()) return;

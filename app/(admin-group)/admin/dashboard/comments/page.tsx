@@ -34,7 +34,13 @@ export default function CommentsPage() {
     setComments(data);
   }
 
-  useEffect(() => { fetchComments(); }, []);
+  useEffect(() => {
+    let mounted = true;
+    if (mounted) {
+      setTimeout(() => fetchComments(), 0);
+    }
+    return () => { mounted = false; };
+  }, []);
 
   async function handleApprove(id: number) {
     const confirmed = await confirm({

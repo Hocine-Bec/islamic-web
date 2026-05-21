@@ -34,7 +34,11 @@ export default function AdminReportsPage() {
   }
 
   useEffect(() => {
-    fetchReports();
+    let mounted = true;
+    if (mounted) {
+      setTimeout(() => fetchReports(), 0);
+    }
+    return () => { mounted = false; };
   }, []);
 
   async function handleToggleRead(id: number, currentReadStatus: boolean) {

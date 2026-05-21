@@ -35,9 +35,15 @@ export default function FatawaAdminPage() {
     setFatawa(data);
   }
 
-  useEffect(() => { fetchFatawa(); }, []);
+  useEffect(() => {
+    let mounted = true;
+    if (mounted) {
+      setTimeout(() => fetchFatawa(), 0);
+    }
+    return () => { mounted = false; };
+  }, []);
 
-  async function handleDelete(id: number, question: string) {
+  async function handleDelete(id: number, _question: string) {
     const confirmed = await confirm({
       title: "حذف الفتوى",
       message: `هل أنت متأكد من حذف هذه الفتوى؟ لا يمكن التراجع عن هذا الإجراء.`,

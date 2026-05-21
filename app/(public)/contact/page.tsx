@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const WHATSAPP = "https://wa.me/213XXXXXXXXX";
 const EMAIL = "mailto:contact@example.com";
@@ -131,7 +132,7 @@ export default function ContactPage() {
               سيراجع الشيخ سؤالك ويجيب عليه قريباً بإذن الله.
             </p>
             <p className="text-sm text-gray-400 mb-6">
-              يمكنك متابعة الإجابة في قسم <a href="/fatawa" className="text-green-700 hover:underline">الفتاوى</a> عند نشرها.
+              يمكنك متابعة الإجابة في قسم <Link href="/fatawa" className="text-green-700 hover:underline">الفتاوى</Link> عند نشرها.
             </p>
             <button
               onClick={() => setStatus("idle")}

@@ -1,6 +1,4 @@
-"use client";
-
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 
 export default function RichContent({ html }: { html: string }) {
   const clean = DOMPurify.sanitize(html);

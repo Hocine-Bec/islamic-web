@@ -33,7 +33,13 @@ export default function PostsPage() {
     setPosts(data);
   }
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => {
+    let mounted = true;
+    if (mounted) {
+      setTimeout(() => fetchPosts(), 0);
+    }
+    return () => { mounted = false; };
+  }, []);
 
   async function handleDelete(id: number, title: string) {
     const confirmed = await confirm({

@@ -16,7 +16,7 @@ export default function CommentSection({
   postId: number;
   initialComments: Comment[];
 }) {
-  const [comments, setComments] = useState(initialComments);
+  const [comments] = useState(initialComments);
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
