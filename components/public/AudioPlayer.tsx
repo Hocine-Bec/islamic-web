@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { FiDownload } from "react-icons/fi";
+import { useState, useRef } from "react";
+import { Download } from "lucide-react";
 
 type AudioFile = {
   id: number;
@@ -27,7 +27,7 @@ export default function AudioPlayer({ files }: { files: AudioFile[] }) {
           title="تحميل المادة"
           className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 rounded-lg transition flex-shrink-0"
         >
-          <FiDownload />
+          <Download size={14} />
           <span>تحميل المادة</span>
         </a>
 

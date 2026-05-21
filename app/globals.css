@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
-@import "tailwindcss";
+@theme {
+  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+}
+
 
 /* Tiptap editor styles */
 .ProseMirror {
