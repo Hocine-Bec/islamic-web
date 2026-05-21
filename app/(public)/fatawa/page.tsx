@@ -1,17 +1,28 @@
-import { getPublishedFatawa, getAllFatawaCategories } from "@/lib/queries/fatawa";
+import { getPublishedFatawaLight, getPublishedFatawaCount } from "@/lib/queries/fatawa";
+import { getAllFatawaCategories } from "@/lib/queries/fatawa";
 import FatawaGrid from "@/components/public/FatawaGrid";
-export const dynamic = "force-dynamic";
 
 export default async function FatawaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ page?: string; category?: string }>;
 }) {
-  const { category } = await searchParams;
-  const [fatawa, categories] = await Promise.all([
-    getPublishedFatawa(),
+  const { page, category } = await searchParams;
+  const currentPage = Number(page ?? 1);
+
+  const [fatawa, totalCount, categories] = await Promise.all([
+    getPublishedFatawaLight(currentPage, category),
+    getPublishedFatawaCount(),
     getAllFatawaCategories(),
   ]);
 
-  return <FatawaGrid fatawa={fatawa} categories={categories} initialCategory={category || null} />;
+  return (
+    <FatawaGrid
+      fatawa={fatawa}
+      categories={categories}
+      totalCount={totalCount}
+      currentPage={currentPage}
+      activeCategory={category}
+    />
+  );
 }

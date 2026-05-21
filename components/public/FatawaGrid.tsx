@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { formatArabicDate } from "@/lib/utils";
-import { getCategoryColor } from "@/lib/categoryColors";
+import { Search } from "lucide-react";
+
+const PAGE_SIZE = 12;
 
 type Fatwa = {
   id: number;
@@ -18,43 +21,50 @@ type Fatwa = {
 
 type Category = { id: number; name: string; slug: string };
 
-const PAGE_SIZE = 12;
-
 export default function FatawaGrid({
   fatawa,
   categories,
-  initialCategory = null,
+  totalCount,
+  currentPage,
+  activeCategory,
 }: {
   fatawa: Fatwa[];
   categories: Category[];
-  initialCategory?: string | null;
+  totalCount: number;
+  currentPage: number;
+  activeCategory?: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory);
-  const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    return fatawa.filter((f) => {
-      const matchesCategory = !activeCategory || f.categorySlug === activeCategory;
-      const matchesSearch = !search.trim() || f.question.includes(search);
-      return matchesCategory && matchesSearch;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  function navigate(params: { page?: number; category?: string }) {
+    const p = new URLSearchParams();
+    if (params.category) p.set("category", params.category);
+    if (params.page && params.page > 1) p.set("page", String(params.page));
+    startTransition(() => {
+      router.push(`${pathname}?${p.toString()}`);
     });
-  }, [fatawa, activeCategory, search]);
+  }
 
-  const paginated = filtered.slice(0, page * PAGE_SIZE);
-  const hasMore = paginated.length < filtered.length;
+  const filtered = search.trim()
+    ? fatawa.filter((f) => f.question.includes(search))
+    : fatawa;
 
   return (
     <>
       {/* Filter bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-16 z-40">
+      <div className={`bg-white border-b border-gray-100 sticky top-16 z-40 transition-opacity ${isPending ? "opacity-60" : ""}`}>
         <div className="max-w-5xl mx-auto px-6 py-4 space-y-3">
           <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
-            <span className="text-gray-400 text-sm">🔍</span>
+            <Search size={14} className="text-gray-400 flex-shrink-0" />
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="ابحث في الفتاوى..."
               className="bg-transparent flex-1 text-sm text-gray-700 outline-none placeholder:text-gray-300"
             />
@@ -62,13 +72,10 @@ export default function FatawaGrid({
               <button onClick={() => setSearch("")} className="text-gray-400 text-xs">✕</button>
             )}
           </div>
-
           <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() => { setActiveCategory(null); setPage(1); }}
-              className={`text-xs px-4 py-1.5 rounded-full border transition ${activeCategory === null
-                  ? "bg-green-700 text-white border-green-700"
-                  : "bg-white text-gray-500 border-gray-200 hover:border-green-300"
+              onClick={() => navigate({ page: 1 })}
+              className={`text-xs px-4 py-1.5 rounded-full border transition ${!activeCategory ? "bg-green-700 text-white border-green-700" : "bg-white text-gray-500 border-gray-200"
                 }`}
             >
               الكل
@@ -76,10 +83,8 @@ export default function FatawaGrid({
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => { setActiveCategory(cat.slug); setPage(1); }}
-                className={`text-xs px-4 py-1.5 rounded-full border transition ${activeCategory === cat.slug
-                    ? "bg-green-700 text-white border-green-700"
-                    : "bg-white text-gray-500 border-gray-200 hover:border-green-300"
+                onClick={() => navigate({ category: cat.slug, page: 1 })}
+                className={`text-xs px-4 py-1.5 rounded-full border transition ${activeCategory === cat.slug ? "bg-green-700 text-white border-green-700" : "bg-white text-gray-500 border-gray-200"
                   }`}
               >
                 {cat.name}
@@ -96,26 +101,19 @@ export default function FatawaGrid({
           <h1 className="text-sm font-medium text-gray-800">الفتاوى</h1>
         </div>
         <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-          {filtered.length} فتوى
+          {totalCount} فتوى
         </span>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 pb-12">
         {filtered.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-4xl mb-3">🔍</div>
             <p className="text-gray-400 text-sm">لا توجد نتائج</p>
-            <button
-              onClick={() => { setSearch(""); setActiveCategory(null); }}
-              className="mt-4 text-xs text-green-700 hover:underline"
-            >
-              إعادة ضبط الفلاتر
-            </button>
           </div>
         ) : (
           <>
             <div className="space-y-3 mt-4">
-              {paginated.map((f) => (
+              {filtered.map((f) => (
                 <Link
                   key={f.id}
                   href={`/fatawa/${f.slug}`}
@@ -128,7 +126,7 @@ export default function FatawaGrid({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {f.categoryName && (
-                          <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full ${getCategoryColor(f.categorySlug).bg} ${getCategoryColor(f.categorySlug).text}`}>
+                          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
                             {f.categoryName}
                           </span>
                         )}
@@ -153,13 +151,24 @@ export default function FatawaGrid({
               ))}
             </div>
 
-            {hasMore && (
-              <div className="text-center mt-8">
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
                 <button
-                  onClick={() => setPage((p) => p + 1)}
-                  className="bg-white border border-gray-200 text-gray-600 text-sm px-6 py-2.5 rounded-xl hover:border-green-300 hover:text-green-700 transition"
+                  onClick={() => navigate({ page: currentPage - 1, category: activeCategory })}
+                  disabled={currentPage <= 1 || isPending}
+                  className="text-xs px-4 py-2 rounded-xl border border-gray-200 text-gray-500 hover:border-green-300 disabled:opacity-30 transition"
                 >
-                  تحميل المزيد — {filtered.length - paginated.length} فتوى متبقية
+                  → السابق
+                </button>
+                <span className="text-xs text-gray-400 px-3">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => navigate({ page: currentPage + 1, category: activeCategory })}
+                  disabled={currentPage >= totalPages || isPending}
+                  className="text-xs px-4 py-2 rounded-xl border border-gray-200 text-gray-500 hover:border-green-300 disabled:opacity-30 transition"
+                >
+                  التالي ←
                 </button>
               </div>
             )}
