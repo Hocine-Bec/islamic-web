@@ -1,11 +1,16 @@
-
-export const dynamic = "force-dynamic";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import RichContent from "@/components/public/RichContent";
 import { getFatawaBySlug, getAudioByFatwa } from "@/lib/queries/fatawa";
 import { formatArabicDate } from "@/lib/utils";
 import AudioPlayer from "@/components/public/AudioPlayer";
 import { getCategoryColor } from "@/lib/categoryColors";
+
+async function FatwaAudioSection({ fatwaId }: { fatwaId: number }) {
+  const audioFiles = await getAudioByFatwa(fatwaId);
+  if (audioFiles.length === 0) return null;
+  return <AudioPlayer files={audioFiles} />;
+}
 
 export default async function SingleFatwaPage({
   params,
@@ -16,8 +21,6 @@ export default async function SingleFatwaPage({
   const decodedSlug = decodeURIComponent(slug);
   const fatwa = await getFatawaBySlug(decodedSlug);
   if (!fatwa || fatwa.status !== "published") notFound();
-
-  const audioFiles = await getAudioByFatwa(fatwa.id);
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10" dir="rtl">
@@ -64,8 +67,10 @@ export default async function SingleFatwaPage({
             <span className="text-xs text-gray-600 font-medium">الجواب</span>
           </div>
 
-          {/* Audio */}
-          {audioFiles.length > 0 && <AudioPlayer files={audioFiles} />}
+          {/* Audio - Streamed */}
+          <Suspense fallback={<div className="h-16 bg-gray-50 rounded-xl animate-pulse mb-8" />}>
+            <FatwaAudioSection fatwaId={fatwa.id} />
+          </Suspense>
 
           {/* Answer content */}
           <div className="prose prose-sm max-w-none text-gray-700 leading-loose" dir="rtl">

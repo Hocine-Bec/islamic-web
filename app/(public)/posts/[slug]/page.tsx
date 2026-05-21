@@ -1,5 +1,4 @@
-
-export const dynamic = "force-dynamic";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import RichContent from "@/components/public/RichContent";
 import { getPublishedPostBySlug } from "@/lib/queries/posts";
@@ -11,6 +10,17 @@ import CommentSection from "@/components/public/CommentSection";
 import AudioPlayer from "@/components/public/AudioPlayer";
 import ReportMistake from "@/components/public/ReportMistake";
 
+async function AudioSection({ postId }: { postId: number }) {
+  const audioFiles = await getAudioByPost(postId);
+  if (audioFiles.length === 0) return null;
+  return <AudioPlayer files={audioFiles} />;
+}
+
+async function CommentsSectionWrapper({ postId }: { postId: number }) {
+  const comments = await getApprovedCommentsByPost(postId);
+  return <CommentSection postId={postId} initialComments={comments} />;
+}
+
 export default async function PostPage({
   params,
 }: {
@@ -20,11 +30,6 @@ export default async function PostPage({
   const decodedSlug = decodeURIComponent(slug);
   const post = await getPublishedPostBySlug(decodedSlug);
   if (!post) notFound();
-
-  const [comments, audioFiles] = await Promise.all([
-    getApprovedCommentsByPost(post.id),
-    getAudioByPost(post.id),
-  ]);
 
   const color = getCategoryColor(post.categorySlug ?? null);
   const readTime = estimateReadTime(post.content ?? "");
@@ -54,20 +59,23 @@ export default async function PostPage({
         {post.title}
       </h1>
 
-      {/* Audio player */}
-      {audioFiles.length > 0 && <AudioPlayer files={audioFiles} />}
+      {/* Audio player - Streamed */}
+      <Suspense fallback={<div className="h-16 bg-gray-50 rounded-xl animate-pulse mb-8" />}>
+        <AudioSection postId={post.id} />
+      </Suspense>
 
       {/* Content */}
       <div className="prose prose-sm max-w-none text-gray-700 leading-loose" dir="rtl">
-        {/* Content */}
         <RichContent html={post.content ?? ""} />
       </div>
 
       {/* Divider */}
       <div className="border-t border-gray-100 mt-12" />
 
-      {/* Comments */}
-      <CommentSection postId={post.id} initialComments={comments} />
+      {/* Comments - Streamed */}
+      <Suspense fallback={<div className="mt-16 h-32 bg-gray-50 rounded-xl animate-pulse" />}>
+        <CommentsSectionWrapper postId={post.id} />
+      </Suspense>
 
       {/* Report mistake */}
       <div className="flex items-center justify-start mt-10 pt-6 border-t border-gray-100">
