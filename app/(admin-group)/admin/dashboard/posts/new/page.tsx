@@ -2,9 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import RichTextEditor from "@/components/admin/RichTextEditor";
+import dynamic from "next/dynamic";
 import AudioManager from "@/components/admin/AudioManager";
 import { ArrowRight, Loader2, Send, ChevronDown, Check } from "lucide-react";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/admin/RichTextEditor"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="border border-gray-100 rounded-xl h-64 bg-gray-50 animate-pulse flex items-center justify-center text-xs text-gray-300">
+        جارٍ تحميل المحرر...
+      </div>
+    ),
+  }
+);
 
 type Category = { id: number; name: string };
 

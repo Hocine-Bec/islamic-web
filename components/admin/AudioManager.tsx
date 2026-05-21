@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUploadThing } from "@/lib/uploadthingClient";
 
 type AudioFile = {
@@ -14,6 +14,12 @@ export default function AudioManager({ postId }: { postId: number }) {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [title, setTitle] = useState("");
   const [progress, setProgress] = useState(0);
+
+  const fetchFiles = useCallback(async () => {
+    const res = await fetch(`/api/audio/post/${postId}`);
+    const data = await res.json();
+    setFiles(data);
+  }, [postId]);
 
   const { startUpload, isUploading } = useUploadThing("audioUploader", {
     onUploadProgress: (p) => setProgress(p),
@@ -39,15 +45,9 @@ export default function AudioManager({ postId }: { postId: number }) {
     },
   });
 
-  async function fetchFiles() {
-    const res = await fetch(`/api/audio/post/${postId}`);
-    const data = await res.json();
-    setFiles(data);
-  }
-
   useEffect(() => {
-    fetchFiles();
-  }, [postId]);
+    setTimeout(() => fetchFiles(), 0);
+  }, [fetchFiles]);
 
   async function handleDelete(id: number) {
     if (!confirm("هل أنت متأكد من حذف هذا الملف الصوتي؟")) return;

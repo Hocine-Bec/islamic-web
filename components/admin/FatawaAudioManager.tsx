@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUploadThing } from "@/lib/uploadthingClient";
 
 type AudioFile = {
@@ -22,13 +22,15 @@ export default function FatawaAudioManager({ fatawaId }: { fatawaId: number }) {
     onUploadProgress: (p) => setProgress(p),
   });
 
-  async function fetchFiles() {
+  const fetchFiles = useCallback(async () => {
     const res = await fetch(`/api/fatawa-audio/fatwa/${fatawaId}`);
     const data = await res.json();
     setFiles(data);
-  }
+  }, [fatawaId]);
 
-  useEffect(() => { fetchFiles(); }, [fatawaId]);
+  useEffect(() => {
+    setTimeout(() => fetchFiles(), 0);
+  }, [fetchFiles]);
 
   async function handleUpload() {
     if (!selectedFile || !title.trim()) return;
